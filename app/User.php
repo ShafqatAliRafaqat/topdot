@@ -2,28 +2,23 @@
 
 namespace App;
 
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Contracts\Auth\MustVerifyEmail;
-use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 
-class User extends Authenticatable
+class User extends Model
 {
-    use Notifiable;
-
     protected $fillable = [
-        'name', 'email', 'password',
+        'name',
     ];
-   
-    protected $hidden = [
-        'password', 'remember_token',
-    ];
-
-    protected $casts = [
-        'email_verified_at' => 'datetime',
-    ];
-
-    public function country()
+    public function scopeWithAll($query)
     {
-        return $this->hasOne(Country::class, 'user_id');
+        return $query->with(['userCar','userLocation']);
+    }
+    public function userCar()
+    {
+        return $this->hasOneThrough(Car::class, UserCar::class);
+    }
+    public function userLocation()
+    {
+        return $this->hasOneThrough(State::class, UserLocation::class);
     }
 }

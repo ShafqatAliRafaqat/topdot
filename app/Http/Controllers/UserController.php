@@ -2,57 +2,83 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use App\Repository\IUserRepository;
-use Illuminate\Support\Facades\View;
+use App\Car;
+use App\Http\Resources\UserResource;
+use App\Http\Requests\User\CreateUserRequest;
+use App\Http\Requests\User\UpdateUserRequest;
+use App\Repository\UserRepository;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Lang;
+use Illuminate\Support\Facades\Storage;
 
 class UserController extends Controller
 {   
     public $user;
     
-    public function __construct(IUserRepository $user)
+    public function __construct()
     {
-        $this->user = $user;
+        $this->user =  new UserRepository();
     }
 
-    public function showUsers()
+    public function index()
     {
-        $users = $this->user->getAllUsers();
-        $users->load('country');
-        return View::make('user.index', compact('users'));
+        
+        $users = $this->user->all();
+        
+        $users = UserResource::collection($users);
+        
+        return generateResponse($users,true,Lang::get('topdot.user.list'),null,'object');
     }
     
-    public function createUser()
+    public function show($id)
     {
-        return View::make('user.edit');
-    }
+        $user = $this->user->getById($id);
+        
+        $user = UserResource::make($user);
 
-    public function getUser($id)
-    {
-        $user = $this->user->getUserById($id);
-        return View::make('user.edit', compact('user'));
+        return generateResponse($user,true,Lang::get('topdot.user.single'),null,'object');
     }
     
-    public function saveUser(Request $request, $id = null)
+    public function create(CreateUserRequest $request)
     {   
-        $collection = $request->except(['_token','_method']);
-
-        if( ! is_null( $id ) ) 
-        {
-            $this->user->createOrUpdate($id, $collection);
+        try{
+            DB::beginTransaction();
+                $user = $this->user->create($request->input());
+                $response = generateResponse($user,true,Lang::get('topdot.user.created'),null,'object');
+            DB::commit();
         }
-        else
-        {
-            $this->user->createOrUpdate($id = null, $collection);
+          catch (\Exception $e) {
+            DB::rollBack();
+            $response = generateResponse(null,false,$e->getMessage(),null,'object');
         }
-
-        return redirect()->route('user.list');
+        return $response;
     }
-
-    public function deleteUser($id)
+    public function update(UpdateUserRequest $request, $id)
+    {   
+        try{
+            DB::beginTransaction();
+                $user = $this->user->update($id, $request->input());
+                $response = generateResponse($user,true,Lang::get('topdot.user.created'),null,'object');
+            DB::commit();
+        }
+          catch (\Exception $e) {
+            DB::rollBack();
+            $response = generateResponse(null,false,$e->getMessage(),null,'object');
+        }
+        return $response;
+    }
+    public function delete($id)
     {
-        $this->user->deleteUser($id);
-
-        return redirect()->route('user.list');
+        try{
+            DB::beginTransaction();
+                $this->user->deleteById($id);
+                $response = generateResponse(null,true,Lang::get('topdot.user.deleted'),null,'object');
+            DB::commit();
+        }
+          catch (\Exception $e) {
+            DB::rollBack();
+            $response = generateResponse(null,false,$e->getMessage(),null,'object');
+        }
+        return $response;
     }
 }

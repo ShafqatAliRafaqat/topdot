@@ -2,14 +2,15 @@
 
 namespace App\Repository;
 
-use App\User;
+use App\Car;
 
-class UserRepository extends AbstractRepository
+class CarRepository extends AbstractRepository
 {   
     protected $model ;
 
     public function __construct()
     {
-        parent::__construct(new User());
+        parent::__construct(new Car());
     }
+   
 }
